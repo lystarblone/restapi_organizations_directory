@@ -1,0 +1,33 @@
+services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./app.db:/app/app.db
+      - ./.env:/app/.env
+    environment:
+      - PYTHONPATH=/app
+    depends_on:
+      - db-init
+    networks:
+      - app-network
+
+  db-init:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      - ./.env:/app/.env
+    command: >
+      sh -c "alembic upgrade head && python scripts/seed.py"
+    environment:
+      - PYTHONPATH=/app
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge

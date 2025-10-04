@@ -3,10 +3,12 @@ import sys
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, text
 from sqlalchemy.orm import Session
-from app.database import SQLALCHEMY_DATABASE_URL
+from app.database import Base
 from app.models import Building, Activity, Organization
+
+SQLALCHEMY_DATABASE_URL = "sqlite:////app/app.db"
 
 engine = create_engine(SQLALCHEMY_DATABASE_URL, echo=True, connect_args={"check_same_thread": False})
 
@@ -14,8 +16,11 @@ def get_db_session():
     return Session(bind=engine)
 
 def seed_data():
+    Base.metadata.create_all(bind=engine)
+
     session = get_db_session()
     try:
+        session.execute(text("DELETE FROM organization_activity"))
         session.query(Organization).delete()
         session.query(Activity).delete()
         session.query(Building).delete()
