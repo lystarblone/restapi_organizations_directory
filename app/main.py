@@ -36,6 +36,17 @@ def haversine(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
 
 @app.get("/organizations/by-building/{building_id}", response_model=List[OrganizationOut], dependencies=[Depends(verify_api_key)])
 async def get_organizations_by_building(building_id: int, db: Session = Depends(get_db)):
+    """Получить список организаций по ID здания.
+    
+    Args:
+        building_id (int): Уникальный идентификатор здания.
+    
+    Returns:
+        List[OrganizationOut]: Список организаций, расположенных в указанном здании.
+    
+    Raises:
+        HTTPException 404: Если организации не найдены.
+    """
     organizations = db.query(Organization).filter(Organization.building_id == building_id).all()
     if not organizations:
         raise HTTPException(status_code=404, detail="No organizations found for this building")
@@ -43,6 +54,17 @@ async def get_organizations_by_building(building_id: int, db: Session = Depends(
 
 @app.get("/organizations/by-activity/{activity_id}", response_model=List[OrganizationOut], dependencies=[Depends(verify_api_key)])
 async def get_organizations_by_activity(activity_id: int, db: Session = Depends(get_db)):
+    """Получить список организаций по ID деятельности.
+    
+    Args:
+        activity_id (int): Уникальный идентификатор деятельности.
+    
+    Returns:
+        List[OrganizationOut]: Список организаций, связанных с указанной деятельностью.
+    
+    Raises:
+        HTTPException 404: Если организации не найдены.
+    """
     organizations = db.query(Organization).join(organization_activity).filter(organization_activity.c.activity_id == activity_id).all()
     if not organizations:
         raise HTTPException(status_code=404, detail="No organizations found for this activity")
@@ -50,6 +72,17 @@ async def get_organizations_by_activity(activity_id: int, db: Session = Depends(
 
 @app.post("/organizations/by-radius", response_model=List[OrganizationOut], dependencies=[Depends(verify_api_key)])
 async def get_organizations_by_radius(search: RadiusSearch, db: Session = Depends(get_db)):
+    """Получить список организаций в заданном радиусе от координат.
+    
+    Args:
+        search (RadiusSearch): Объект с координатами и радиусом поиска.
+    
+    Returns:
+        List[OrganizationOut]: Список организаций в указанном радиусе.
+    
+    Raises:
+        HTTPException 404: Если организации не найдены.
+    """
     buildings = db.query(Building).all()
     valid_buildings = [b for b in buildings if haversine(search.latitude, search.longitude, b.latitude, b.longitude) <= search.radius_km]
     building_ids = [b.id for b in valid_buildings]
@@ -60,6 +93,14 @@ async def get_organizations_by_radius(search: RadiusSearch, db: Session = Depend
 
 @app.get("/buildings", response_model=List[BuildingOut], dependencies=[Depends(verify_api_key)])
 async def get_buildings(db: Session = Depends(get_db)):
+    """Получить список всех зданий.
+    
+    Returns:
+        List[BuildingOut]: Список всех зарегистрированных зданий.
+    
+    Raises:
+        HTTPException 404: Если здания не найдены.
+    """
     buildings = db.query(Building).all()
     if not buildings:
         raise HTTPException(status_code=404, detail="No buildings found")
@@ -67,6 +108,17 @@ async def get_buildings(db: Session = Depends(get_db)):
 
 @app.get("/organizations/{organization_id}", response_model=OrganizationOut, dependencies=[Depends(verify_api_key)])
 async def get_organization_by_id(organization_id: int, db: Session = Depends(get_db)):
+    """Получить информацию об организации по её ID.
+    
+    Args:
+        organization_id (int): Уникальный идентификатор организации.
+    
+    Returns:
+        OrganizationOut: Детали организации.
+    
+    Raises:
+        HTTPException 404: Если организация не найдена.
+    """
     organization = db.query(Organization).filter(Organization.id == organization_id).first()
     if not organization:
         raise HTTPException(status_code=404, detail="Organization not found")
@@ -74,6 +126,17 @@ async def get_organization_by_id(organization_id: int, db: Session = Depends(get
 
 @app.get("/organizations/by-activity-name/{activity_name}", response_model=List[OrganizationOut], dependencies=[Depends(verify_api_key)])
 async def get_organizations_by_activity_name(activity_name: str, db: Session = Depends(get_db)):
+    """Получить список организаций по названию деятельности (включая поддеятельности).
+    
+    Args:
+        activity_name (str): Название корневой деятельности.
+    
+    Returns:
+        List[OrganizationOut]: Список организаций, связанных с данной деятельностью и её поддеятельностями.
+    
+    Raises:
+        HTTPException 404: Если деятельность или организации не найдены.
+    """
     root_activity = db.query(Activity).filter(Activity.name == activity_name).first()
     if not root_activity:
         raise HTTPException(status_code=404, detail="Activity not found")
@@ -87,6 +150,17 @@ async def get_organizations_by_activity_name(activity_name: str, db: Session = D
 
 @app.get("/organizations/by-name/{name}", response_model=List[OrganizationOut], dependencies=[Depends(verify_api_key)])
 async def get_organizations_by_name(name: str, db: Session = Depends(get_db)):
+    """Получить список организаций по частичному совпадению имени.
+    
+    Args:
+        name (str): Часть названия организации для поиска.
+    
+    Returns:
+        List[OrganizationOut]: Список организаций, чьи названия содержат указанную строку.
+    
+    Raises:
+        HTTPException 404: Если организации не найдены.
+    """
     organizations = db.query(Organization).filter(Organization.name.ilike(f"%{name}%")).all()
     if not organizations:
         raise HTTPException(status_code=404, detail="No organizations found with this name")
